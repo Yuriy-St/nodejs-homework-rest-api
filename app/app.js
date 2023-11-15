@@ -5,11 +5,6 @@ const contactsRouter = require('../routes/api/contacts');
 const authRouter = require('../routes/api/auth');
 const invalidUrlError = require('../helpers/invalidUrlError');
 const errorHandler = require('../helpers/errorHandler');
-const dotenv = require('dotenv');
-const path = require('path');
-
-const configPath = path.join(__dirname, '..', 'config', '.env');
-dotenv.config({ path: configPath });
 
 const app = express();
 

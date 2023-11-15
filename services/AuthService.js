@@ -2,54 +2,58 @@ const HttpError = require('../helpers/HttpError');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { nanoid } = require('nanoid');
 
 class AuthService {
   async authenticate(token) {
     const { SECRET_KEY } = process.env;
     const { id } = jwt.verify(token, SECRET_KEY);
-    const user = await User.findById(id);
-    return user;
+    const candidate = await User.findById(id);
+    return candidate;
   }
 
   async register(body) {
     const { email, password } = body;
-    const user = await User.findOne({ email });
-    if (user) {
+    const competitor = await User.findOne({ email });
+    if (competitor) {
       throw HttpError(409, 'Email in use');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationCode = nanoid();
+
     const newUser = await User.create({
       ...body,
       password: hashedPassword,
+      verificationCode,
     });
     return newUser;
   }
 
   async login({ email, password }) {
     const { SECRET_KEY } = process.env;
-    const user = await User.findOne({ email });
+    const candidate = await User.findOne({ email });
 
-    if (!user) {
-      throw HttpError(401, 'Email or password is invalid');
+    if (!candidate) {
+      throw HttpError(401, 'Email or password is invalid', 'LoginError');
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, candidate.password);
 
     if (!isMatch) {
-      throw HttpError(401, 'Email or password is invalid');
+      throw HttpError(401, 'Email or password is invalid', 'LoginError');
     }
 
     const payload = {
-      id: user._id,
+      id: candidate._id,
     };
 
     const token = jwt.sign(payload, SECRET_KEY, {
       expiresIn: '24h',
     });
-    await User.findByIdAndUpdate(user._id, { token });
+    const { verified } = await User.findByIdAndUpdate(candidate._id, { token });
 
-    return token;
+    return { token, verified };
   }
 
   async logout({ _id }) {
@@ -58,8 +62,13 @@ class AuthService {
   }
 
   async update(id, body = {}) {
-    const response = await User.findByIdAndUpdate(id, body, { new: true });
-    return response;
+    const candidate = await User.findByIdAndUpdate(id, body, { new: true });
+    return candidate;
+  }
+
+  async findOne(body = {}) {
+    const candidate = await User.findOne({ ...body });
+    return candidate;
   }
 }
 
