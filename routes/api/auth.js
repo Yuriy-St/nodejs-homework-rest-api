@@ -17,7 +17,7 @@ router.post('/login', validateBody(schemas.loginSchema), authController.login);
 
 router.post('/logout', authenticate, authController.logout);
 
-router.post('/current', authenticate, authController.current);
+router.get('/current', authenticate, authController.current);
 
 router.patch(
   '/',
